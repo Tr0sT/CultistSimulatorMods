@@ -343,17 +343,156 @@ public sealed class ShiftPopulateSlotClickHandler : MonoBehaviour, IPointerClick
 
     private static bool CandidateWouldOpenMoreSlots(Situation situation, ThresholdSphere slot, Token candidate)
     {
-        var childSpecs = slot.GetChildSpheresSpecsToAddIfThisTokenAdded(candidate, situation.VerbId);
-        if (childSpecs == null)
-            return false;
+        var aspects = GetSituationAspectsWithTokenInSlot(situation, slot, candidate);
+        var childSpecs = GetApplicableChildSlotSpecs(situation, slot, candidate, aspects).ToList();
 
         foreach (var childSpec in childSpecs)
         {
-            if (childSpec != null && situation.GetSphereById(childSpec.Id) == null)
+            if (ChildSlotWouldNeedInput(situation, childSpec))
                 return true;
         }
 
+        return CanReachRecipeAfterChildSlots(situation, aspects, childSpecs);
+    }
+
+    private static IEnumerable<SphereSpec> GetApplicableChildSlotSpecs(
+        Situation situation,
+        ThresholdSphere slot,
+        Token candidate,
+        AspectsDictionary aspects)
+    {
+        var childSpecs = slot.GetChildSpheresSpecsToAddIfThisTokenAdded(candidate, situation.VerbId);
+        if (childSpecs == null)
+            yield break;
+
+        foreach (var childSpec in childSpecs)
+        {
+            if (childSpec == null)
+                continue;
+
+            if (childSpec.IfAspectsPresent != null &&
+                !aspects.SatisfiesRequirements(childSpec.IfAspectsPresent))
+            {
+                continue;
+            }
+
+            yield return childSpec;
+        }
+    }
+
+    private static bool ChildSlotWouldNeedInput(Situation situation, SphereSpec childSpec)
+    {
+        if (string.IsNullOrEmpty(childSpec.Id))
+            return true;
+
+        var existingSphere = situation.GetSphereById(childSpec.Id);
+        var existingThreshold = existingSphere as ThresholdSphere;
+        if (existingThreshold == null)
+            return true;
+
+        if (!situation.GetSpheresActiveForCurrentState().Contains(existingThreshold))
+            return true;
+
+        return existingThreshold.IsEmpty();
+    }
+
+    private static bool CanReachRecipeAfterChildSlots(
+        Situation situation,
+        AspectsDictionary aspects,
+        List<SphereSpec> childSpecs)
+    {
+        if (childSpecs.Count == 0)
+            return false;
+
+        var hornedAxe = Watchman.Get<HornedAxe>();
+        var compendium = Watchman.Get<Compendium>();
+        if (hornedAxe == null || compendium == null || situation.Verb == null)
+            return false;
+
+        var futureAspectIds = GetFutureSlotAspectIds(childSpecs);
+        if (futureAspectIds.Count == 0)
+            return false;
+
+        var context = hornedAxe.GetAspectsInContext(aspects);
+        foreach (var recipe in compendium.GetValidRecipesForUnstartedVerb(situation.VerbId))
+        {
+            if (recipe == null || !recipe.IsValid() || !recipe.Craftable)
+                continue;
+
+            if (!RequirementsSatisfiedAllowingFutureSlots(
+                    context.AspectsInSituation,
+                    recipe.Requirements,
+                    futureAspectIds))
+            {
+                continue;
+            }
+
+            if (!RequirementsSatisfied(context.AspectsOnTable, recipe.TableReqs) ||
+                !RequirementsSatisfied(context.AspectsExtant, recipe.ExtantReqs))
+            {
+                continue;
+            }
+
+            return true;
+        }
+
         return false;
+    }
+
+    private static HashSet<string> GetFutureSlotAspectIds(IEnumerable<SphereSpec> childSpecs)
+    {
+        var aspectIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var childSpec in childSpecs)
+        {
+            AddPositiveAspectIds(aspectIds, childSpec.Required);
+            AddPositiveAspectIds(aspectIds, childSpec.Essential);
+        }
+
+        return aspectIds;
+    }
+
+    private static void AddPositiveAspectIds(HashSet<string> aspectIds, AspectsDictionary aspects)
+    {
+        if (aspects == null)
+            return;
+
+        foreach (var aspect in aspects)
+        {
+            if (aspect.Value > 0)
+                aspectIds.Add(aspect.Key);
+        }
+    }
+
+    private static bool RequirementsSatisfiedAllowingFutureSlots(
+        AspectsDictionary aspects,
+        Dictionary<string, string> requirements,
+        HashSet<string> futureAspectIds)
+    {
+        if (requirements == null || requirements.Count == 0)
+            return false;
+
+        var reducedRequirements = new Dictionary<string, string>(requirements, StringComparer.Ordinal);
+        var removedFutureRequirement = false;
+        foreach (var requirement in requirements)
+        {
+            if (!futureAspectIds.Contains(requirement.Key) ||
+                aspects.SatisfiesRequirement(requirement.Key, requirement.Value))
+            {
+                continue;
+            }
+
+            reducedRequirements.Remove(requirement.Key);
+            removedFutureRequirement = true;
+        }
+
+        return removedFutureRequirement && aspects.SatisfiesRequirements(reducedRequirements);
+    }
+
+    private static bool RequirementsSatisfied(
+        AspectsDictionary aspects,
+        Dictionary<string, string> requirements)
+    {
+        return requirements == null || aspects.SatisfiesRequirements(requirements);
     }
 
     private static Situation FindOwningUnstartedSituation(ThresholdSphere slot)
