@@ -10,6 +10,8 @@ Shift-click a recipe slot to fill it with a compatible visible card on the table
 
 - Empty slot: inserts the nearest compatible card.
 - Filled slot: cycles to the next compatible card in the same slot. Repeated Shift-clicks rotate through the compatible cards, then wrap back to the first one.
+- Duplicate cards of the same element id are treated as one option.
+- In unstarted situations, the mod prefers candidates that leave the situation with a craftable recipe the game can actually start.
 
 This is a modern official-DLL-mod version of the old Partiality-style `ShiftPopulate` idea. It targets the current UI classes used by recent Cultist Simulator builds, where recipe slots are `ThresholdSphere` objects.
 
@@ -110,6 +112,8 @@ Then open a recipe slot, hold Shift, and click with the mouse:
 
 - On an empty slot, the nearest compatible card should move into the slot.
 - On a filled slot, the current card should be replaced with the next compatible card. Repeated Shift-clicks should continue cycling through the same compatible set.
+- If several visible cards are the same element, only the nearest one should appear in the cycle.
+- If the current situation can already be started, Shift Populate should not insert a card that prevents the recipe from starting.
 
 If the slot only highlights matching cards, the DLL did not load. Check that `GHIRBI` is enabled before `Shift Populate`.
 
@@ -119,6 +123,8 @@ The mod uses the game's own slot validation before moving a card:
 
 - slot emptiness: `ThresholdSphere.IsEmpty()`
 - candidate match: `GetMatchForTokenPayload(...).MatchType == Okay`
-- movement: `ThresholdSphere.TryAcceptToken(...)`, with `TryMoveAsideAndAcceptToken(...)` as the replacement fallback for filled slots
+- duplicate suppression: `Token.PayloadEntityId`
+- recipe viability in unstarted situations: `Compendium.GetFirstMatchingRecipe(...)` plus `Recipe.CanExecuteInContext(...)`
+- movement: exactly one `ThresholdSphere.TryAcceptToken(...)` or `TryMoveAsideAndAcceptToken(...)` call, with success checked from the final slot contents so split stacks are not processed twice
 
 Shift detection uses both Unity's new Input System and legacy `Input.GetKey` fallback.
