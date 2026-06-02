@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>ShiftPopulate</AssemblyName>
+    <RootNamespace>ShiftPopulate</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GameManagedDir Condition="'$(GameManagedDir)' == ''">/home/tr0st/Games/cultist-simulator/game/cultistsimulator_Data/Managed</GameManagedDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(GameManagedDir)/Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="SecretHistories.Main">
+      <HintPath>$(GameManagedDir)/SecretHistories.Main.dll</HintPath>
+    </Reference>
+    <Reference Include="SecretHistories.Enums">
+      <HintPath>$(GameManagedDir)/SecretHistories.Enums.dll</HintPath>
+    </Reference>
+    <Reference Include="SecretHistories.Interfaces">
+      <HintPath>$(GameManagedDir)/SecretHistories.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(GameManagedDir)/UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameManagedDir)/UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(GameManagedDir)/UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(GameManagedDir)/UnityEngine.UIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(GameManagedDir)/UnityEngine.InputLegacyModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.InputSystem">
+      <HintPath>$(GameManagedDir)/Unity.InputSystem.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

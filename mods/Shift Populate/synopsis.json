@@ -1,0 +1,7 @@
+{
+  "name": "Shift Populate",
+  "author": "tr0st + Codex",
+  "version": "0.1.0",
+  "description": "Shift-click an empty recipe slot to fill it with the nearest compatible card.",
+  "tags": [ "Utility" ]
+}
