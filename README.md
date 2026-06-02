@@ -6,7 +6,10 @@ Local DLL mods for Cultist Simulator.
 
 ### Shift Populate
 
-Shift-click an empty recipe slot to fill it with the nearest compatible visible card on the table.
+Shift-click a recipe slot to fill it with a compatible visible card on the table.
+
+- Empty slot: inserts the nearest compatible card.
+- Filled slot: cycles to the next compatible card in the same slot. Repeated Shift-clicks rotate through the compatible cards, then wrap back to the first one.
 
 This is a modern official-DLL-mod version of the old Partiality-style `ShiftPopulate` idea. It targets the current UI classes used by recent Cultist Simulator builds, where recipe slots are `ThresholdSphere` objects.
 
@@ -103,7 +106,10 @@ After restarting the game, check `Player.log` near the save file. A successful D
 [ShiftPopulate] Initialised.
 ```
 
-Then open a recipe with an empty slot, hold Shift, and click the empty slot with the mouse. The nearest compatible card should move into the slot.
+Then open a recipe slot, hold Shift, and click with the mouse:
+
+- On an empty slot, the nearest compatible card should move into the slot.
+- On a filled slot, the current card should be replaced with the next compatible card. Repeated Shift-clicks should continue cycling through the same compatible set.
 
 If the slot only highlights matching cards, the DLL did not load. Check that `GHIRBI` is enabled before `Shift Populate`.
 
@@ -113,6 +119,6 @@ The mod uses the game's own slot validation before moving a card:
 
 - slot emptiness: `ThresholdSphere.IsEmpty()`
 - candidate match: `GetMatchForTokenPayload(...).MatchType == Okay`
-- movement: `ThresholdSphere.TryAcceptToken(...)`
+- movement: `ThresholdSphere.TryAcceptToken(...)`, with `TryMoveAsideAndAcceptToken(...)` as the replacement fallback for filled slots
 
 Shift detection uses both Unity's new Input System and legacy `Input.GetKey` fallback.
