@@ -312,15 +312,48 @@ public sealed class ShiftPopulateSlotClickHandler : MonoBehaviour, IPointerClick
         if (situation == null)
             return candidates;
 
-        var currentPlacementCanStart = CanStartWithTokenInSlot(situation, slot, currentToken);
-        var startableCandidates = candidates
-            .Where(candidate => CanStartWithTokenInSlot(situation, slot, candidate))
+        if (!IsLastOpenThresholdSlot(situation, slot))
+            return candidates;
+
+        var startableOrExpandingCandidates = candidates
+            .Where(candidate => CandidateWouldOpenMoreSlots(situation, slot, candidate) ||
+                                CanStartWithTokenInSlot(situation, slot, candidate))
             .ToList();
 
-        if (currentPlacementCanStart || startableCandidates.Count > 0)
-            return startableCandidates;
+        if (startableOrExpandingCandidates.Count > 0)
+            return startableOrExpandingCandidates;
 
         return candidates;
+    }
+
+    private static bool IsLastOpenThresholdSlot(Situation situation, ThresholdSphere slot)
+    {
+        foreach (var sphere in situation.GetSpheresActiveForCurrentState())
+        {
+            var threshold = sphere as ThresholdSphere;
+            if (threshold == null || threshold == slot)
+                continue;
+
+            if (threshold.IsEmpty())
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool CandidateWouldOpenMoreSlots(Situation situation, ThresholdSphere slot, Token candidate)
+    {
+        var childSpecs = slot.GetChildSpheresSpecsToAddIfThisTokenAdded(candidate, situation.VerbId);
+        if (childSpecs == null)
+            return false;
+
+        foreach (var childSpec in childSpecs)
+        {
+            if (childSpec != null && situation.GetSphereById(childSpec.Id) == null)
+                return true;
+        }
+
+        return false;
     }
 
     private static Situation FindOwningUnstartedSituation(ThresholdSphere slot)
